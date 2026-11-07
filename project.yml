@@ -1,0 +1,60 @@
+name: Malmungchi
+
+options:
+  bundleIdPrefix: com.yangjinmo
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: ko
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  WhisperKit:
+    url: https://github.com/argmaxinc/argmax-oss-swift.git
+    from: "1.1.1"
+
+targets:
+  Malmungchi:
+    type: application
+    platform: iOS
+    sources:
+      - Malmungchi
+    dependencies:
+      - package: WhisperKit
+        product: WhisperKit
+    info:
+      path: Malmungchi/Info.plist
+      properties:
+        CFBundleDisplayName: 말뭉치
+        NSMicrophoneUsageDescription: 하루의 대화와 생각을 녹음해 기기 안에서 받아쓰기 위해 마이크를 사용합니다.
+        UIBackgroundModes:
+          - audio
+        UILaunchScreen: {}
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yangjinmo.Malmungchi
+        TARGETED_DEVICE_FAMILY: "1"
+    scheme:
+      testTargets:
+        - MalmungchiTests
+
+  MalmungchiTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - MalmungchiTests
+    dependencies:
+      - target: Malmungchi
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yangjinmo.MalmungchiTests
+        GENERATE_INFOPLIST_FILE: YES
