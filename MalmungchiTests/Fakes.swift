@@ -235,3 +235,26 @@ final class InMemoryAPIKeyStore: APIKeyStoring {
         key = nil
     }
 }
+
+final class FakeDigestGenerator: DailyDigestGenerating {
+    var result: Result<DigestContent, Error>
+    var modelName = "fake-model"
+    private(set) var inputs: [DigestInput] = []
+
+    init(result: Result<DigestContent, Error> = .success(Fixtures.sampleContent)) {
+        self.result = result
+    }
+
+    func generate(from input: DigestInput) async throws -> DigestContent {
+        inputs.append(input)
+        return try result.get()
+    }
+}
+
+extension Fixtures {
+    static let sampleContent = DigestContent(
+        diary: "오늘은 견적 이야기를 했다.",
+        todos: [DigestTodo(text: "견적서 보내기", due: "금요일")],
+        decisions: [DigestDecision(text: "디자인은 외주로 한다", source: nil)]
+    )
+}
