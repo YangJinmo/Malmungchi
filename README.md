@@ -78,7 +78,7 @@ open Malmungchi.xcodeproj
 
 ```bash
 xcodebuild test -project Malmungchi.xcodeproj -scheme Malmungchi \
-  -destination "platform=iOS Simulator,name=iPhone 16"
+  -destination "platform=iOS Simulator,name=<설치된 iPhone 시뮬레이터>"
 ```
 
 | 대상 | 내용 |
@@ -88,6 +88,8 @@ xcodebuild test -project Malmungchi.xcodeproj -scheme Malmungchi \
 | Data | JSON 왕복, 손상 파일 백업, 받아쓰기 JSON·마크다운 저장·삭제 |
 | ViewModel | 자동 받아쓰기, 녹음 흐름, 에러 표시, 삭제, 재생·이동·문장 탭 재생 |
 | Playback | 재생 위치 → 현재 받아쓰기 구간 찾기 |
+
+시뮬레이터 이름은 `xcrun simctl list devices available`로 확인합니다.
 
 GitHub Actions가 `main` push와 PR마다 테스트를 돌립니다.
 

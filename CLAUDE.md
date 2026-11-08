@@ -7,9 +7,10 @@
 ```bash
 xcodegen generate   # project.yml을 고치거나 파일을 추가·삭제한 뒤 반드시 실행
 xcodebuild test -project Malmungchi.xcodeproj -scheme Malmungchi \
-  -destination "platform=iOS Simulator,name=iPhone 16" CODE_SIGNING_ALLOWED=NO
+  -destination "platform=iOS Simulator,name=<설치된 iPhone 시뮬레이터>" CODE_SIGNING_ALLOWED=NO
 ```
 
+- 시뮬레이터 이름은 `xcrun simctl list devices available`로 확인해 설치된 iPhone으로 바꿔 쓴다.
 - `Malmungchi.xcodeproj`는 생성물이다. 직접 고치지 말고 `project.yml`을 고친다.
 - 작업을 끝내기 전에 빌드와 테스트가 통과하는지 확인한다.
 
