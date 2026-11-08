@@ -55,12 +55,22 @@ flowchart LR
 Malmungchi/
 ├── recordings.json        # 녹음 메타데이터
 ├── Audio/<id>.m4a
-└── Transcripts/
-    ├── <id>.json          # 앱용
-    └── <id>.md            # 옵시디언·LLM 위키용 (front matter + [mm:ss] 구간)
+├── Transcripts/
+│   ├── <id>.json          # 앱용
+│   └── <id>.md            # 옵시디언·LLM 위키용 (front matter + [mm:ss] 구간)
+└── Digests/
+    ├── <yyyy-MM-dd>.json  # 앱용
+    └── <yyyy-MM-dd>.md    # 하루 정리 (일기·할 일·결정 사항, 출처는 [[녹음 id|mm:ss]] 링크)
 ```
 
 `recordings.json`이 손상되면 조용히 버리지 않고 `recordings.corrupt-<timestamp>.json`으로 백업한 뒤 알립니다.
+
+## 하루 정리 (2주 차)
+
+- 날짜 머리글의 **하루 정리**에서 그 날 받아쓰기를 Claude로 정리합니다. 설정에서 API 키를 입력하면 기기 키체인에 저장됩니다.
+- LLM에는 **받아쓴 글과 시각만** 보냅니다. 오디오·파일 이름·녹음 제목·기기 정보는 보내지 않습니다.
+- 응답은 도구 호출 JSON으로 받고, 읽지 못하면 오류를 알려 주며 한 번만 다시 묻습니다.
+- 할 일은 사용자가 고른 것만 iOS 미리알림에 넣습니다.
 
 ## 실행
 
@@ -71,7 +81,7 @@ open Malmungchi.xcodeproj
 ```
 
 - iOS 17 이상, Xcode 16 이상 (Swift Testing 사용)
-- 처음 받아쓸 때 Whisper 모델(약 600MB)을 내려받습니다. 개발 중에는 `WhisperKitTranscriber(modelName: "base")`로 바꾸면 빠릅니다.
+- 처음 받아쓸 때 Whisper 모델을 내려받습니다(large-v3 turbo 약 600MB). 설정 화면에서 모델을 고를 수 있고, 디버그 빌드의 기본값은 base입니다.
 - 시뮬레이터에서도 돌아가지만, 받아쓰기 속도는 실제 기기(Neural Engine)에서 확인해야 합니다.
 
 ## 테스트
@@ -96,7 +106,7 @@ GitHub Actions가 `main` push와 PR마다 테스트를 돌립니다.
 ## 로드맵
 
 - [x] **1주:** 녹음·가져오기, 온디바이스 받아쓰기, 저장, 테스트, CI
-- [ ] **2주:** LLM 정리 → 하루 일기·할 일·결정 사항, iOS 미리알림 연동, 공유 시트 확장(통화 녹음 바로 보내기)
+- [ ] **2주:** (정리·미리알림 완료, 공유 시트 확장 남음) LLM 정리 → 하루 일기·할 일·결정 사항, iOS 미리알림 연동, 공유 시트 확장(통화 녹음 바로 보내기)
 - [ ] **3주:** 사람·프로젝트 위키 자동 갱신(LLM 위키), 기록 검색·질문(RAG)
 - [ ] **4주:** MCP 서버(Claude 앱·Claude Code에서 조회), 데모 영상
 
