@@ -20,7 +20,9 @@ struct MalmungchiApp: App {
             if let container {
                 RecordingListView(
                     viewModel: container.makeListViewModel(),
-                    makeDetailViewModel: { container.makeDetailViewModel(for: $0) }
+                    makeDetailViewModel: { container.makeDetailViewModel(for: $0) },
+                    makeDigestViewModel: { container.makeDigestViewModel(for: $0) },
+                    makeSettingsViewModel: { container.makeSettingsViewModel() }
                 )
             } else {
                 ContentUnavailableView(

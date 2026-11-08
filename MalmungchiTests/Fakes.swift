@@ -53,6 +53,8 @@ final class FakeAudioStorage: AudioStorage {
     var durationToReturn: TimeInterval = 42
     private(set) var files: Set<String> = []
     private(set) var importedSources: [URL] = []
+    /// 이 파일을 가져오려 하면 실패시킨다.
+    var failingSources: Set<URL> = []
 
     func makeRecordingFileName() -> String {
         nextFileName
@@ -63,6 +65,7 @@ final class FakeAudioStorage: AudioStorage {
     }
 
     func importFile(from sourceURL: URL) throws -> String {
+        if failingSources.contains(sourceURL) { throw StubError() }
         importedSources.append(sourceURL)
         files.insert(nextFileName)
         return nextFileName
@@ -185,5 +188,118 @@ final class FakeAudioPlayer: AudioPlaying {
         isPlaying = false
         currentTime = 0
         onFinish?()
+    }
+}
+
+final class InMemoryAppSettings: AppSettings {
+    var transcriptionModel: TranscriptionModel
+
+    init(transcriptionModel: TranscriptionModel = .base) {
+        self.transcriptionModel = transcriptionModel
+    }
+}
+
+final class InMemoryDigestRepository: DigestRepository {
+    private(set) var items: [Date: DailyDigest] = [:]
+    private(set) var saveCount = 0
+    var saveError: Error?
+
+    func digest(on date: Date) throws -> DailyDigest? {
+        items[date]
+    }
+
+    func save(_ digest: DailyDigest) throws {
+        if let saveError { throw saveError }
+        items[digest.date] = digest
+        saveCount += 1
+    }
+}
+
+final class InMemoryAPIKeyStore: APIKeyStoring {
+    private(set) var key: String?
+    var failure: Error?
+
+    init(key: String? = nil) {
+        self.key = key
+    }
+
+    func load() throws -> String? {
+        if let failure { throw failure }
+        return key
+    }
+
+    func save(_ key: String) throws {
+        if let failure { throw failure }
+        self.key = key
+    }
+
+    func delete() throws {
+        if let failure { throw failure }
+        key = nil
+    }
+}
+
+final class FakeDigestGenerator: DailyDigestGenerating {
+    var result: Result<DigestContent, Error>
+    var modelName = "fake-model"
+    private(set) var inputs: [DigestInput] = []
+
+    init(result: Result<DigestContent, Error> = .success(Fixtures.sampleContent)) {
+        self.result = result
+    }
+
+    func generate(from input: DigestInput) async throws -> DigestContent {
+        inputs.append(input)
+        return try result.get()
+    }
+}
+
+extension Fixtures {
+    static let sampleContent = DigestContent(
+        diary: "오늘은 견적 이야기를 했다.",
+        todos: [DigestTodo(text: "견적서 보내기", due: "금요일")],
+        decisions: [DigestDecision(text: "디자인은 외주로 한다", source: nil)]
+    )
+}
+
+final class FakeReminderService: ReminderAdding {
+    var access: ReminderAccess = .granted
+    var grantOnRequest = true
+    /// n번째 add에서 실패시킨다 (1부터).
+    var failOnAddNumber: Int?
+    private(set) var requestCount = 0
+    private(set) var added: [NewReminder] = []
+    private var addCalls = 0
+
+    func requestAccess() async throws -> Bool {
+        requestCount += 1
+        access = grantOnRequest ? .granted : .denied
+        return grantOnRequest
+    }
+
+    func add(_ reminder: NewReminder) throws {
+        addCalls += 1
+        if addCalls == failOnAddNumber { throw StubError() }
+        added.append(reminder)
+    }
+}
+
+final class InMemorySharedAudioInbox: SharedAudioInbox {
+    private(set) var files: [URL]
+    private(set) var removed: [URL] = []
+    var listError: Error?
+
+    init(files: [URL] = []) {
+        self.files = files
+    }
+
+    func pendingFiles() throws -> [URL] {
+        if let listError { throw listError }
+        return files
+    }
+
+    func remove(_ file: URL) throws {
+        removed.append(file)
+        files.removeAll { $0 == file }
     }
 }

@@ -4,14 +4,21 @@ import UniformTypeIdentifiers
 struct RecordingListView: View {
     @State private var viewModel: RecordingListViewModel
     @State private var isImporting = false
+    @Environment(\.scenePhase) private var scenePhase
     private let makeDetailViewModel: @MainActor (Recording) -> RecordingDetailViewModel
+    private let makeDigestViewModel: @MainActor (Date) -> DailyDigestViewModel
+    private let makeSettingsViewModel: @MainActor () -> SettingsViewModel
 
     init(
         viewModel: RecordingListViewModel,
-        makeDetailViewModel: @escaping @MainActor (Recording) -> RecordingDetailViewModel
+        makeDetailViewModel: @escaping @MainActor (Recording) -> RecordingDetailViewModel,
+        makeDigestViewModel: @escaping @MainActor (Date) -> DailyDigestViewModel,
+        makeSettingsViewModel: @escaping @MainActor () -> SettingsViewModel
     ) {
         _viewModel = State(initialValue: viewModel)
         self.makeDetailViewModel = makeDetailViewModel
+        self.makeDigestViewModel = makeDigestViewModel
+        self.makeSettingsViewModel = makeSettingsViewModel
     }
 
     var body: some View {
@@ -52,7 +59,18 @@ struct RecordingListView: View {
             .navigationDestination(for: Recording.self) { recording in
                 RecordingDetailView(viewModel: makeDetailViewModel(recording))
             }
+            .navigationDestination(for: DailyDigestRoute.self) { route in
+                DailyDigestView(viewModel: makeDigestViewModel(route.date))
+            }
+            .navigationDestination(for: SettingsRoute.self) { _ in
+                SettingsView(viewModel: makeSettingsViewModel())
+            }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink(value: SettingsRoute()) {
+                        Label("설정", systemImage: "gearshape")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         isImporting = true
@@ -95,10 +113,29 @@ struct RecordingListView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
+            .alert(
+                "가져왔어요",
+                isPresented: Binding(
+                    get: { viewModel.noticeMessage != nil },
+                    set: { if !$0 { viewModel.noticeMessage = nil } }
+                )
+            ) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text(viewModel.noticeMessage ?? "")
+            }
             .onAppear { viewModel.load() }
+            .task { await viewModel.importSharedItems() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    Task { await viewModel.importSharedItems() }
+                }
+            }
         }
     }
 }
+
+private struct SettingsRoute: Hashable {}
 
 private struct DayHeader: View {
     let day: RecordingDay
@@ -107,6 +144,12 @@ private struct DayHeader: View {
         HStack {
             Text(day.date, format: .dateTime.month().day().weekday(.wide))
             Spacer()
+            NavigationLink(value: DailyDigestRoute(date: day.date)) {
+                Label("하루 정리", systemImage: "text.book.closed")
+                    .font(.footnote)
+                    .textCase(nil)
+            }
+            .padding(.trailing, 8)
             Text(DurationText.short(day.totalDuration))
                 .monospacedDigit()
         }

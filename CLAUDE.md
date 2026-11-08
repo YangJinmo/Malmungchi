@@ -7,10 +7,12 @@
 ```bash
 xcodegen generate   # project.yml을 고치거나 파일을 추가·삭제한 뒤 반드시 실행
 xcodebuild test -project Malmungchi.xcodeproj -scheme Malmungchi \
-  -destination "platform=iOS Simulator,name=iPhone 16" CODE_SIGNING_ALLOWED=NO
+  -destination "platform=iOS Simulator,name=<설치된 iPhone 시뮬레이터>" CODE_SIGNING_ALLOWED=NO
 ```
 
+- 시뮬레이터 이름은 `xcrun simctl list devices available`로 확인해 설치된 iPhone으로 바꿔 쓴다.
 - `Malmungchi.xcodeproj`는 생성물이다. 직접 고치지 말고 `project.yml`을 고친다.
+- 앱 그룹(공유 시트 확장)·Keychain은 서명된 빌드에서만 동작한다. 서명 없는 테스트에서는 Keychain 테스트를 건너뛰고, 앱 그룹이 없으면 공유 가져오기를 건너뛴다.
 - 작업을 끝내기 전에 빌드와 테스트가 통과하는지 확인한다.
 
 ## 아키텍처 원칙
@@ -31,7 +33,7 @@ xcodebuild test -project Malmungchi.xcodeproj -scheme Malmungchi \
 ## 로드맵
 
 - [x] 1주: 녹음·가져오기, 온디바이스 받아쓰기(WhisperKit), 저장, 재생, 테스트, CI
-- [ ] 2주: LLM 정리 → 하루 일기·할 일·결정 사항, iOS 미리알림 연동, 공유 시트 확장
+- [x] 2주: LLM 정리 → 하루 일기·할 일·결정 사항, iOS 미리알림 연동, 공유 시트 확장
 - [ ] 3주: 사람·프로젝트 위키 자동 갱신(LLM 위키), 기록 검색·질문(RAG)
 - [ ] 4주: MCP 서버, 데모 영상
 
