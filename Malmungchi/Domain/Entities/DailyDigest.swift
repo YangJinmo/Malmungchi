@@ -44,6 +44,22 @@ struct DailyDigest: Codable, Hashable, Sendable {
     let generatedAt: Date
     /// 정리에 쓴 모델 이름
     let model: String
+    /// 이미 미리알림에 넣은 할 일. 같은 할 일을 두 번 넣지 않는 데 쓴다.
+    var remindedTodoIDs: Set<UUID> = []
+}
+
+extension DailyDigest {
+    /// `remindedTodoIDs`가 없는 예전 파일도 읽는다.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        date = try container.decode(Date.self, forKey: .date)
+        diary = try container.decode(String.self, forKey: .diary)
+        todos = try container.decode([DigestTodo].self, forKey: .todos)
+        decisions = try container.decode([DigestDecision].self, forKey: .decisions)
+        generatedAt = try container.decode(Date.self, forKey: .generatedAt)
+        model = try container.decode(String.self, forKey: .model)
+        remindedTodoIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .remindedTodoIDs) ?? []
+    }
 }
 
 /// LLM에 보내는 입력. 받아쓰기 텍스트와 시각만 담고, 파일 이름·경로·제목·기기 정보는 담지 않는다.

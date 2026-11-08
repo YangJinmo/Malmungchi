@@ -11,6 +11,7 @@ final class AppContainer {
     let apiKeys: APIKeyStoring
     let digests: DigestRepository
     let digestGenerator: DailyDigestGenerating
+    let reminders: ReminderAdding
 
     init(
         recordings: RecordingRepository,
@@ -21,7 +22,8 @@ final class AppContainer {
         settings: AppSettings,
         apiKeys: APIKeyStoring,
         digests: DigestRepository,
-        digestGenerator: DailyDigestGenerating
+        digestGenerator: DailyDigestGenerating,
+        reminders: ReminderAdding
     ) {
         self.recordings = recordings
         self.transcripts = transcripts
@@ -32,6 +34,7 @@ final class AppContainer {
         self.apiKeys = apiKeys
         self.digests = digests
         self.digestGenerator = digestGenerator
+        self.reminders = reminders
     }
 
     /// Documents/Malmungchi 아래에 Audio, Transcripts, recordings.json을 둔다.
@@ -56,7 +59,8 @@ final class AppContainer {
             settings: settings,
             apiKeys: apiKeys,
             digests: try FileDigestRepository(directory: root.appendingPathComponent("Digests", isDirectory: true)),
-            digestGenerator: ClaudeDigestGenerator(apiKeys: apiKeys)
+            digestGenerator: ClaudeDigestGenerator(apiKeys: apiKeys),
+            reminders: EventKitReminderService()
         )
     }
 
@@ -90,7 +94,8 @@ final class AppContainer {
                 transcripts: transcripts,
                 digests: digests,
                 generator: digestGenerator
-            )
+            ),
+            addTodos: AddTodosToRemindersUseCase(reminders: reminders, digests: digests)
         )
     }
 

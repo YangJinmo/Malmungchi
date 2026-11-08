@@ -24,12 +24,35 @@ struct DailyDigestView: View {
                         Text("없어요").foregroundStyle(.secondary)
                     }
                     ForEach(digest.todos) { todo in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(todo.text)
-                            if let due = todo.due {
-                                Text(due).font(.caption).foregroundStyle(.secondary)
+                        Button {
+                            viewModel.toggleSelection(todo)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: icon(for: todo))
+                                    .foregroundStyle(viewModel.isReminded(todo) ? Color.green : Color.accentColor)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(todo.text)
+                                    if let due = todo.due {
+                                        Text(due).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                                .foregroundStyle(.primary)
                             }
                         }
+                        .buttonStyle(.plain)
+                        .disabled(viewModel.isReminded(todo))
+                        .accessibilityHint(viewModel.isReminded(todo) ? "이미 미리알림에 넣었어요" : "눌러서 미리알림에 넣을 항목으로 고르기")
+                    }
+                    if !digest.todos.isEmpty {
+                        Button {
+                            Task { await viewModel.addSelectedToReminders() }
+                        } label: {
+                            HStack {
+                                if viewModel.isAddingReminders { ProgressView() }
+                                Text("고른 할 일을 미리알림에 넣기")
+                            }
+                        }
+                        .disabled(!viewModel.canAddSelected)
                     }
                 }
 
@@ -84,10 +107,33 @@ struct DailyDigestView: View {
                 set: { if !$0 { viewModel.errorMessage = nil } }
             )
         ) {
+            if viewModel.needsReminderSettings {
+                Button("설정 열기") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            }
             Button("확인", role: .cancel) {}
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+        .alert(
+            "미리알림",
+            isPresented: Binding(
+                get: { viewModel.noticeMessage != nil },
+                set: { if !$0 { viewModel.noticeMessage = nil } }
+            )
+        ) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text(viewModel.noticeMessage ?? "")
+        }
         .onAppear { viewModel.load() }
+    }
+
+    private func icon(for todo: DigestTodo) -> String {
+        if viewModel.isReminded(todo) { return "checkmark.circle.fill" }
+        return viewModel.isSelected(todo) ? "checkmark.circle" : "circle"
     }
 }

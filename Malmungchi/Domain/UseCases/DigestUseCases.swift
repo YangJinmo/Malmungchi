@@ -57,3 +57,47 @@ struct FetchDailyDigestUseCase {
         try digests.digest(on: calendar.startOfDay(for: date))
     }
 }
+
+/// 사용자가 고른 할 일만 미리알림에 넣는다. 자동으로 넣지 않는다.
+struct AddTodosToRemindersUseCase {
+    let reminders: ReminderAdding
+    let digests: DigestRepository
+    var dayFormatter = MarkdownDigestFormatter()
+
+    /// - Returns: 미리알림에 넣은 내용이 반영된 정리. 이미 넣은 할 일은 건너뛴다.
+    /// 중간에 실패하면 그때까지 넣은 것은 기록하고 에러를 던진다.
+    func execute(todoIDs: Set<UUID>, in digest: DailyDigest) async throws -> DailyDigest {
+        let pending = digest.todos.filter { todoIDs.contains($0.id) && !digest.remindedTodoIDs.contains($0.id) }
+        guard !pending.isEmpty else { return digest }
+
+        switch reminders.access {
+        case .granted: break
+        case .denied: throw ReminderError.accessDenied
+        case .notDetermined:
+            guard try await reminders.requestAccess() else { throw ReminderError.accessDenied }
+        }
+
+        var updated = digest
+        var failure: Error?
+        for todo in pending {
+            do {
+                try reminders.add(NewReminder(title: todo.text, notes: notes(for: todo, in: digest)))
+                updated.remindedTodoIDs.insert(todo.id)
+            } catch {
+                failure = error
+                break
+            }
+        }
+
+        if updated != digest { try digests.save(updated) }
+        if let failure { throw failure }
+        return updated
+    }
+
+    private func notes(for todo: DigestTodo, in digest: DailyDigest) -> String {
+        var lines: [String] = []
+        if let due = todo.due { lines.append("기한: \(due)") }
+        lines.append("말뭉치 \(dayFormatter.dayString(digest.date)) 하루 정리")
+        return lines.joined(separator: "\n")
+    }
+}

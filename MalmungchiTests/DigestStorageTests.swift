@@ -88,4 +88,17 @@ struct DigestStorageTests {
 
         #expect(try repository.digest(on: Fixtures.date(2026, 11, 4))?.diary == "다시")
     }
+
+    @Test("미리알림 기록이 없는 예전 json도 읽는다")
+    func decodesDigestWithoutRemindedIDs() throws {
+        let json = """
+        {"date":"2026-11-03T15:00:00Z","diary":"a","todos":[],"decisions":[],"generatedAt":"2026-11-04T13:00:00Z","model":"m"}
+        """
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let digest = try decoder.decode(DailyDigest.self, from: Data(json.utf8))
+
+        #expect(digest.remindedTodoIDs.isEmpty)
+    }
 }

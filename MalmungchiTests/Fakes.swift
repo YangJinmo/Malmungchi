@@ -258,3 +258,25 @@ extension Fixtures {
         decisions: [DigestDecision(text: "디자인은 외주로 한다", source: nil)]
     )
 }
+
+final class FakeReminderService: ReminderAdding {
+    var access: ReminderAccess = .granted
+    var grantOnRequest = true
+    /// n번째 add에서 실패시킨다 (1부터).
+    var failOnAddNumber: Int?
+    private(set) var requestCount = 0
+    private(set) var added: [NewReminder] = []
+    private var addCalls = 0
+
+    func requestAccess() async throws -> Bool {
+        requestCount += 1
+        access = grantOnRequest ? .granted : .denied
+        return grantOnRequest
+    }
+
+    func add(_ reminder: NewReminder) throws {
+        addCalls += 1
+        if addCalls == failOnAddNumber { throw StubError() }
+        added.append(reminder)
+    }
+}
