@@ -187,3 +187,11 @@ final class FakeAudioPlayer: AudioPlaying {
         onFinish?()
     }
 }
+
+final class InMemoryAppSettings: AppSettings {
+    var transcriptionModel: TranscriptionModel
+
+    init(transcriptionModel: TranscriptionModel = .base) {
+        self.transcriptionModel = transcriptionModel
+    }
+}

@@ -7,19 +7,22 @@ final class AppContainer {
     let storage: AudioStorage
     let recorder: AudioRecording
     let transcriber: Transcribing
+    let settings: AppSettings
 
     init(
         recordings: RecordingRepository,
         transcripts: TranscriptRepository,
         storage: AudioStorage,
         recorder: AudioRecording,
-        transcriber: Transcribing
+        transcriber: Transcribing,
+        settings: AppSettings
     ) {
         self.recordings = recordings
         self.transcripts = transcripts
         self.storage = storage
         self.recorder = recorder
         self.transcriber = transcriber
+        self.settings = settings
     }
 
     /// Documents/Malmungchi 아래에 Audio, Transcripts, recordings.json을 둔다.
@@ -31,6 +34,7 @@ final class AppContainer {
             appropriateFor: nil,
             create: true
         )
+        let settings = UserDefaultsAppSettings()
         let root = documents.appendingPathComponent("Malmungchi", isDirectory: true)
 
         return AppContainer(
@@ -38,7 +42,8 @@ final class AppContainer {
             transcripts: try FileTranscriptRepository(directory: root.appendingPathComponent("Transcripts", isDirectory: true)),
             storage: try FileAudioStorage(directory: root.appendingPathComponent("Audio", isDirectory: true)),
             recorder: AVAudioRecorderService(),
-            transcriber: WhisperKitTranscriber()
+            transcriber: WhisperKitTranscriber(modelProvider: { settings.transcriptionModel }),
+            settings: settings
         )
     }
 
@@ -60,6 +65,11 @@ final class AppContainer {
             transcribeRecording: transcribeUseCase,
             deleteRecording: DeleteRecordingUseCase(recordings: recordings, transcripts: transcripts, storage: storage)
         )
+    }
+
+    @MainActor
+    func makeSettingsViewModel() -> SettingsViewModel {
+        SettingsViewModel(settings: settings)
     }
 
     @MainActor

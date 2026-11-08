@@ -3,8 +3,8 @@ import WhisperKit
 
 /// WhisperKit으로 기기 안에서 받아쓴다. 오디오는 기기 밖으로 나가지 않는다.
 ///
-/// 처음 실행할 때 모델을 내려받는다 (기본 모델 약 600MB, Wi-Fi 권장).
-/// 개발 중에는 `modelName: "base"`처럼 작은 모델로 바꾸면 빠르다.
+/// 처음 쓰는 모델은 내려받는다 (large-v3 turbo 약 600MB, Wi-Fi 권장).
+/// 모델은 설정에서 고르고, 받아쓸 때마다 현재 선택을 읽는다.
 actor WhisperKitTranscriber: Transcribing {
     enum TranscriberError: Error, LocalizedError {
         case noResult
@@ -16,14 +16,21 @@ actor WhisperKitTranscriber: Transcribing {
         }
     }
 
-    /// iOS 권장 다국어 모델 (Large v3 Turbo 압축판)
-    static let defaultModel = "large-v3-v20240930_626MB"
+    /// 설정의 모델 → WhisperKit 모델 이름. large-v3 turbo는 iOS 권장 압축판.
+    static func whisperName(for model: TranscriptionModel) -> String {
+        switch model {
+        case .base: return "openai_whisper-base"
+        case .small: return "openai_whisper-small"
+        case .largeV3Turbo: return "large-v3-v20240930_626MB"
+        }
+    }
 
-    private let modelName: String
+    private let modelProvider: @Sendable () -> TranscriptionModel
     private var pipeline: WhisperKit?
+    private var loadedModel: TranscriptionModel?
 
-    init(modelName: String = WhisperKitTranscriber.defaultModel) {
-        self.modelName = modelName
+    init(modelProvider: @escaping @Sendable () -> TranscriptionModel) {
+        self.modelProvider = modelProvider
     }
 
     func transcribe(audioURL: URL, language: String) async throws -> TranscriptionOutput {
@@ -56,9 +63,13 @@ actor WhisperKitTranscriber: Transcribing {
     }
 
     private func loadPipeline() async throws -> WhisperKit {
-        if let pipeline { return pipeline }
-        let loaded = try await WhisperKit(WhisperKitConfig(model: modelName))
+        let model = modelProvider()
+        if let pipeline, loadedModel == model { return pipeline }
+        pipeline = nil
+        loadedModel = nil
+        let loaded = try await WhisperKit(WhisperKitConfig(model: Self.whisperName(for: model)))
         pipeline = loaded
+        loadedModel = model
         return loaded
     }
 }

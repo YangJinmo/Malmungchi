@@ -5,13 +5,16 @@ struct RecordingListView: View {
     @State private var viewModel: RecordingListViewModel
     @State private var isImporting = false
     private let makeDetailViewModel: @MainActor (Recording) -> RecordingDetailViewModel
+    private let makeSettingsViewModel: @MainActor () -> SettingsViewModel
 
     init(
         viewModel: RecordingListViewModel,
-        makeDetailViewModel: @escaping @MainActor (Recording) -> RecordingDetailViewModel
+        makeDetailViewModel: @escaping @MainActor (Recording) -> RecordingDetailViewModel,
+        makeSettingsViewModel: @escaping @MainActor () -> SettingsViewModel
     ) {
         _viewModel = State(initialValue: viewModel)
         self.makeDetailViewModel = makeDetailViewModel
+        self.makeSettingsViewModel = makeSettingsViewModel
     }
 
     var body: some View {
@@ -52,7 +55,15 @@ struct RecordingListView: View {
             .navigationDestination(for: Recording.self) { recording in
                 RecordingDetailView(viewModel: makeDetailViewModel(recording))
             }
+            .navigationDestination(for: SettingsRoute.self) { _ in
+                SettingsView(viewModel: makeSettingsViewModel())
+            }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink(value: SettingsRoute()) {
+                        Label("설정", systemImage: "gearshape")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         isImporting = true
@@ -99,6 +110,8 @@ struct RecordingListView: View {
         }
     }
 }
+
+private struct SettingsRoute: Hashable {}
 
 private struct DayHeader: View {
     let day: RecordingDay
