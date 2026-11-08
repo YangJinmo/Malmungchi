@@ -146,3 +146,33 @@ struct DeleteRecordingUseCase {
         try recordings.delete(id: recordingID)
     }
 }
+
+struct SharedImportResult: Equatable {
+    let imported: [Recording]
+    /// 가져오지 못해 Inbox에 남겨 둔 파일 수
+    let failedCount: Int
+}
+
+/// 공유 시트로 받은 오디오를 모두 가져오고 Inbox를 비운다.
+/// 하나가 실패해도 나머지는 계속하고, 실패한 파일은 남겨서 다음에 다시 시도한다.
+struct ImportSharedAudioUseCase {
+    let inbox: SharedAudioInbox
+    let importAudio: ImportAudioUseCase
+
+    func execute() async throws -> SharedImportResult {
+        var imported: [Recording] = []
+        var failed = 0
+
+        for file in try inbox.pendingFiles() {
+            do {
+                imported.append(try await importAudio.execute(from: file))
+            } catch {
+                failed += 1
+                continue
+            }
+            // 가져온 뒤에는 지우지 못해도 실패로 세지 않는다 (다시 가져오면 중복이 되므로).
+            try? inbox.remove(file)
+        }
+        return SharedImportResult(imported: imported, failedCount: failed)
+    }
+}

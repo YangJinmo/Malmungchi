@@ -53,6 +53,8 @@ final class FakeAudioStorage: AudioStorage {
     var durationToReturn: TimeInterval = 42
     private(set) var files: Set<String> = []
     private(set) var importedSources: [URL] = []
+    /// 이 파일을 가져오려 하면 실패시킨다.
+    var failingSources: Set<URL> = []
 
     func makeRecordingFileName() -> String {
         nextFileName
@@ -63,6 +65,7 @@ final class FakeAudioStorage: AudioStorage {
     }
 
     func importFile(from sourceURL: URL) throws -> String {
+        if failingSources.contains(sourceURL) { throw StubError() }
         importedSources.append(sourceURL)
         files.insert(nextFileName)
         return nextFileName
@@ -278,5 +281,25 @@ final class FakeReminderService: ReminderAdding {
         addCalls += 1
         if addCalls == failOnAddNumber { throw StubError() }
         added.append(reminder)
+    }
+}
+
+final class InMemorySharedAudioInbox: SharedAudioInbox {
+    private(set) var files: [URL]
+    private(set) var removed: [URL] = []
+    var listError: Error?
+
+    init(files: [URL] = []) {
+        self.files = files
+    }
+
+    func pendingFiles() throws -> [URL] {
+        if let listError { throw listError }
+        return files
+    }
+
+    func remove(_ file: URL) throws {
+        removed.append(file)
+        files.removeAll { $0 == file }
     }
 }

@@ -24,6 +24,7 @@ targets:
     platform: iOS
     sources:
       - Malmungchi
+      - Shared
     dependencies:
       - package: WhisperKit
         product: WhisperKit

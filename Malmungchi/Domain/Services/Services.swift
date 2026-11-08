@@ -29,3 +29,11 @@ protocol AudioPlaying: AnyObject {
 protocol Transcribing {
     func transcribe(audioURL: URL, language: String) async throws -> TranscriptionOutput
 }
+
+/// 공유 시트로 보내 온 오디오 파일이 가져가기를 기다리는 곳.
+protocol SharedAudioInbox: AnyObject {
+    /// 대기 중인 파일. 오래된 것부터.
+    func pendingFiles() throws -> [URL]
+    /// 가져온 파일을 지운다.
+    func remove(_ file: URL) throws
+}
