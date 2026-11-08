@@ -28,6 +28,12 @@ targets:
     dependencies:
       - package: WhisperKit
         product: WhisperKit
+      - target: MalmungchiShare
+    entitlements:
+      path: Malmungchi/Malmungchi.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.yangjinmo.Malmungchi
     info:
       path: Malmungchi/Info.plist
       properties:
@@ -48,6 +54,31 @@ targets:
     scheme:
       testTargets:
         - MalmungchiTests
+
+  MalmungchiShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - MalmungchiShare
+      - Shared
+    info:
+      path: MalmungchiShare/Info.plist
+      properties:
+        CFBundleDisplayName: 말뭉치
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule: SUBQUERY (extensionItems, $extensionItem, SUBQUERY ($extensionItem.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.audio").@count >= 1).@count >= 1
+    entitlements:
+      path: MalmungchiShare/MalmungchiShare.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.yangjinmo.Malmungchi
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yangjinmo.Malmungchi.Share
+        TARGETED_DEVICE_FAMILY: "1"
 
   MalmungchiTests:
     type: bundle.unit-test

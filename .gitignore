@@ -1,6 +1,9 @@
 # XcodeGen이 만든 프로젝트는 커밋하지 않는다 (project.yml이 원본)
 Malmungchi.xcodeproj/
 Malmungchi/Info.plist
+Malmungchi/Malmungchi.entitlements
+MalmungchiShare/Info.plist
+MalmungchiShare/MalmungchiShare.entitlements
 
 # Xcode
 DerivedData/
