@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 struct RecordingListView: View {
     @State private var viewModel: RecordingListViewModel
     @State private var isImporting = false
+    @Environment(\.scenePhase) private var scenePhase
     private let makeDetailViewModel: @MainActor (Recording) -> RecordingDetailViewModel
     private let makeDigestViewModel: @MainActor (Date) -> DailyDigestViewModel
     private let makeSettingsViewModel: @MainActor () -> SettingsViewModel
@@ -112,7 +113,24 @@ struct RecordingListView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
+            .alert(
+                "가져왔어요",
+                isPresented: Binding(
+                    get: { viewModel.noticeMessage != nil },
+                    set: { if !$0 { viewModel.noticeMessage = nil } }
+                )
+            ) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text(viewModel.noticeMessage ?? "")
+            }
             .onAppear { viewModel.load() }
+            .task { await viewModel.importSharedItems() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    Task { await viewModel.importSharedItems() }
+                }
+            }
         }
     }
 }

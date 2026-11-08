@@ -12,6 +12,8 @@ final class AppContainer {
     let digests: DigestRepository
     let digestGenerator: DailyDigestGenerating
     let reminders: ReminderAdding
+    /// 앱 그룹 권한이 없으면(서명 없는 빌드) nil. 공유 시트 가져오기는 건너뛴다.
+    let sharedInbox: SharedAudioInbox?
 
     init(
         recordings: RecordingRepository,
@@ -23,7 +25,8 @@ final class AppContainer {
         apiKeys: APIKeyStoring,
         digests: DigestRepository,
         digestGenerator: DailyDigestGenerating,
-        reminders: ReminderAdding
+        reminders: ReminderAdding,
+        sharedInbox: SharedAudioInbox? = nil
     ) {
         self.recordings = recordings
         self.transcripts = transcripts
@@ -35,6 +38,7 @@ final class AppContainer {
         self.digests = digests
         self.digestGenerator = digestGenerator
         self.reminders = reminders
+        self.sharedInbox = sharedInbox
     }
 
     /// Documents/Malmungchi 아래에 Audio, Transcripts, recordings.json을 둔다.
@@ -60,7 +64,8 @@ final class AppContainer {
             apiKeys: apiKeys,
             digests: try FileDigestRepository(directory: root.appendingPathComponent("Digests", isDirectory: true)),
             digestGenerator: ClaudeDigestGenerator(apiKeys: apiKeys),
-            reminders: EventKitReminderService()
+            reminders: EventKitReminderService(),
+            sharedInbox: SharedInbox.directoryURL().map { FileSharedAudioInbox(root: $0) }
         )
     }
 
@@ -75,12 +80,14 @@ final class AppContainer {
 
     @MainActor
     func makeListViewModel() -> RecordingListViewModel {
-        RecordingListViewModel(
+        let importAudio = ImportAudioUseCase(storage: storage, repository: recordings)
+        return RecordingListViewModel(
             fetchRecordings: FetchRecordingsUseCase(repository: recordings),
             recordAudio: RecordAudioUseCase(recorder: recorder, storage: storage, repository: recordings),
-            importAudio: ImportAudioUseCase(storage: storage, repository: recordings),
+            importAudio: importAudio,
             transcribeRecording: transcribeUseCase,
-            deleteRecording: DeleteRecordingUseCase(recordings: recordings, transcripts: transcripts, storage: storage)
+            deleteRecording: DeleteRecordingUseCase(recordings: recordings, transcripts: transcripts, storage: storage),
+            importSharedAudio: sharedInbox.map { ImportSharedAudioUseCase(inbox: $0, importAudio: importAudio) }
         )
     }
 

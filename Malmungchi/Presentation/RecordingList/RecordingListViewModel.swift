@@ -9,6 +9,8 @@ final class RecordingListViewModel {
     private(set) var elapsed: TimeInterval = 0
     private(set) var transcribingIDs: Set<UUID> = []
     var errorMessage: String?
+    /// 공유 시트로 받은 파일을 가져온 결과 안내
+    var noticeMessage: String?
 
     /// 녹음·가져오기가 끝나면 바로 받아쓸지
     var autoTranscribe = true
@@ -18,6 +20,8 @@ final class RecordingListViewModel {
     private let importAudioUseCase: ImportAudioUseCase
     private let transcribeRecording: TranscribeRecordingUseCase
     private let deleteRecording: DeleteRecordingUseCase
+    private let importSharedAudio: ImportSharedAudioUseCase?
+    private var isImportingShared = false
     private let calendar: Calendar
     private let now: () -> Date
     private var elapsedTask: Task<Void, Never>?
@@ -28,6 +32,7 @@ final class RecordingListViewModel {
         importAudio: ImportAudioUseCase,
         transcribeRecording: TranscribeRecordingUseCase,
         deleteRecording: DeleteRecordingUseCase,
+        importSharedAudio: ImportSharedAudioUseCase? = nil,
         calendar: Calendar = .current,
         now: @escaping () -> Date = Date.init
     ) {
@@ -36,6 +41,7 @@ final class RecordingListViewModel {
         self.importAudioUseCase = importAudio
         self.transcribeRecording = transcribeRecording
         self.deleteRecording = deleteRecording
+        self.importSharedAudio = importSharedAudio
         self.calendar = calendar
         self.now = now
     }
@@ -62,6 +68,32 @@ final class RecordingListViewModel {
             load()
             if autoTranscribe {
                 await transcribe(recording.id)
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 공유 시트로 보내 온 오디오를 가져온다. 앱이 foreground로 올 때 부른다.
+    func importSharedItems() async {
+        guard let importSharedAudio, !isImportingShared else { return }
+        isImportingShared = true
+        defer { isImportingShared = false }
+
+        do {
+            let result = try await importSharedAudio.execute()
+            guard !result.imported.isEmpty || result.failedCount > 0 else { return }
+            load()
+
+            var parts: [String] = []
+            if !result.imported.isEmpty { parts.append("\(result.imported.count)개를 가져왔어요.") }
+            if result.failedCount > 0 { parts.append("\(result.failedCount)개는 가져오지 못해서 다음에 다시 시도해요.") }
+            noticeMessage = parts.joined(separator: " ")
+
+            if autoTranscribe {
+                for recording in result.imported {
+                    await transcribe(recording.id)
+                }
             }
         } catch {
             errorMessage = error.localizedDescription
