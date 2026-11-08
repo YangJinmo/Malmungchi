@@ -86,6 +86,38 @@ struct APIKeySettingsTests {
         #expect(store.key == nil)
     }
 
+    @Test("붙여넣은 글은 앞뒤 공백을 지워 입력칸에 넣는다")
+    func pasteTrims() {
+        let viewModel = makeViewModel()
+        viewModel.pasteKey("  sk-ant-api03-abcdef1234 \n")
+        #expect(viewModel.apiKeyInput == "sk-ant-api03-abcdef1234")
+    }
+
+    @Test("입력한 키는 앞 7자와 뒤 4자만 보여준다")
+    func masksInput() {
+        let viewModel = makeViewModel()
+        #expect(viewModel.maskedKeyInput == nil)
+
+        viewModel.apiKeyInput = "sk-ant-api03-SECRETSECRET-a1b2"
+        #expect(viewModel.maskedKeyInput == "sk-ant-…a1b2")
+
+        viewModel.apiKeyInput = "short"
+        #expect(viewModel.maskedKeyInput == "•••••")
+    }
+
+    @Test("sk-ant-로 시작하지 않으면 안내만 하고 저장은 막지 않는다")
+    func formatHint() {
+        let viewModel = makeViewModel()
+        #expect(!viewModel.showsKeyFormatHint)
+
+        viewModel.apiKeyInput = "sk-ant-api03-abcdef"
+        #expect(!viewModel.showsKeyFormatHint)
+
+        viewModel.apiKeyInput = "hello"
+        #expect(viewModel.showsKeyFormatHint)
+        #expect(viewModel.canSaveKey)
+    }
+
     @Test("키를 지우면 없는 상태가 된다")
     func removeKey() {
         let store = InMemoryAPIKeyStore(key: "sk-test")
