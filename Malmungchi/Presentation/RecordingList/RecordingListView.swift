@@ -5,15 +5,18 @@ struct RecordingListView: View {
     @State private var viewModel: RecordingListViewModel
     @State private var isImporting = false
     private let makeDetailViewModel: @MainActor (Recording) -> RecordingDetailViewModel
+    private let makeDigestViewModel: @MainActor (Date) -> DailyDigestViewModel
     private let makeSettingsViewModel: @MainActor () -> SettingsViewModel
 
     init(
         viewModel: RecordingListViewModel,
         makeDetailViewModel: @escaping @MainActor (Recording) -> RecordingDetailViewModel,
+        makeDigestViewModel: @escaping @MainActor (Date) -> DailyDigestViewModel,
         makeSettingsViewModel: @escaping @MainActor () -> SettingsViewModel
     ) {
         _viewModel = State(initialValue: viewModel)
         self.makeDetailViewModel = makeDetailViewModel
+        self.makeDigestViewModel = makeDigestViewModel
         self.makeSettingsViewModel = makeSettingsViewModel
     }
 
@@ -54,6 +57,9 @@ struct RecordingListView: View {
             .navigationTitle("말뭉치")
             .navigationDestination(for: Recording.self) { recording in
                 RecordingDetailView(viewModel: makeDetailViewModel(recording))
+            }
+            .navigationDestination(for: DailyDigestRoute.self) { route in
+                DailyDigestView(viewModel: makeDigestViewModel(route.date))
             }
             .navigationDestination(for: SettingsRoute.self) { _ in
                 SettingsView(viewModel: makeSettingsViewModel())
@@ -120,6 +126,12 @@ private struct DayHeader: View {
         HStack {
             Text(day.date, format: .dateTime.month().day().weekday(.wide))
             Spacer()
+            NavigationLink(value: DailyDigestRoute(date: day.date)) {
+                Label("하루 정리", systemImage: "text.book.closed")
+                    .font(.footnote)
+                    .textCase(nil)
+            }
+            .padding(.trailing, 8)
             Text(DurationText.short(day.totalDuration))
                 .monospacedDigit()
         }

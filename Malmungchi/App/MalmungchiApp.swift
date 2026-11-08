@@ -21,6 +21,7 @@ struct MalmungchiApp: App {
                 RecordingListView(
                     viewModel: container.makeListViewModel(),
                     makeDetailViewModel: { container.makeDetailViewModel(for: $0) },
+                    makeDigestViewModel: { container.makeDigestViewModel(for: $0) },
                     makeSettingsViewModel: { container.makeSettingsViewModel() }
                 )
             } else {

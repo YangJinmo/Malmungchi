@@ -9,6 +9,8 @@ final class AppContainer {
     let transcriber: Transcribing
     let settings: AppSettings
     let apiKeys: APIKeyStoring
+    let digests: DigestRepository
+    let digestGenerator: DailyDigestGenerating
 
     init(
         recordings: RecordingRepository,
@@ -17,7 +19,9 @@ final class AppContainer {
         recorder: AudioRecording,
         transcriber: Transcribing,
         settings: AppSettings,
-        apiKeys: APIKeyStoring
+        apiKeys: APIKeyStoring,
+        digests: DigestRepository,
+        digestGenerator: DailyDigestGenerating
     ) {
         self.recordings = recordings
         self.transcripts = transcripts
@@ -26,6 +30,8 @@ final class AppContainer {
         self.transcriber = transcriber
         self.settings = settings
         self.apiKeys = apiKeys
+        self.digests = digests
+        self.digestGenerator = digestGenerator
     }
 
     /// Documents/Malmungchi 아래에 Audio, Transcripts, recordings.json을 둔다.
@@ -38,6 +44,7 @@ final class AppContainer {
             create: true
         )
         let settings = UserDefaultsAppSettings()
+        let apiKeys = KeychainAPIKeyStore()
         let root = documents.appendingPathComponent("Malmungchi", isDirectory: true)
 
         return AppContainer(
@@ -47,7 +54,9 @@ final class AppContainer {
             recorder: AVAudioRecorderService(),
             transcriber: WhisperKitTranscriber(modelProvider: { settings.transcriptionModel }),
             settings: settings,
-            apiKeys: KeychainAPIKeyStore()
+            apiKeys: apiKeys,
+            digests: try FileDigestRepository(directory: root.appendingPathComponent("Digests", isDirectory: true)),
+            digestGenerator: ClaudeDigestGenerator(apiKeys: apiKeys)
         )
     }
 
@@ -68,6 +77,20 @@ final class AppContainer {
             importAudio: ImportAudioUseCase(storage: storage, repository: recordings),
             transcribeRecording: transcribeUseCase,
             deleteRecording: DeleteRecordingUseCase(recordings: recordings, transcripts: transcripts, storage: storage)
+        )
+    }
+
+    @MainActor
+    func makeDigestViewModel(for date: Date) -> DailyDigestViewModel {
+        DailyDigestViewModel(
+            date: date,
+            fetchDigest: FetchDailyDigestUseCase(digests: digests),
+            generateDigest: GenerateDailyDigestUseCase(
+                recordings: recordings,
+                transcripts: transcripts,
+                digests: digests,
+                generator: digestGenerator
+            )
         )
     }
 
