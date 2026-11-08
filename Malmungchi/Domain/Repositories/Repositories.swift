@@ -27,3 +27,11 @@ protocol AudioStorage: AnyObject {
     func duration(of fileName: String) async throws -> TimeInterval
     func remove(fileName: String) throws
 }
+
+/// 하루 정리 저장소. 하루에 하나만 둔다.
+protocol DigestRepository: AnyObject {
+    /// - Parameter date: 그 날의 0시
+    func digest(on date: Date) throws -> DailyDigest?
+    /// 같은 날의 정리가 있으면 덮어쓴다.
+    func save(_ digest: DailyDigest) throws
+}

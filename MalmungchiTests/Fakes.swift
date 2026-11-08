@@ -195,3 +195,19 @@ final class InMemoryAppSettings: AppSettings {
         self.transcriptionModel = transcriptionModel
     }
 }
+
+final class InMemoryDigestRepository: DigestRepository {
+    private(set) var items: [Date: DailyDigest] = [:]
+    private(set) var saveCount = 0
+    var saveError: Error?
+
+    func digest(on date: Date) throws -> DailyDigest? {
+        items[date]
+    }
+
+    func save(_ digest: DailyDigest) throws {
+        if let saveError { throw saveError }
+        items[digest.date] = digest
+        saveCount += 1
+    }
+}
