@@ -8,6 +8,7 @@ final class AppContainer {
     let recorder: AudioRecording
     let transcriber: Transcribing
     let settings: AppSettings
+    let apiKeys: APIKeyStoring
 
     init(
         recordings: RecordingRepository,
@@ -15,7 +16,8 @@ final class AppContainer {
         storage: AudioStorage,
         recorder: AudioRecording,
         transcriber: Transcribing,
-        settings: AppSettings
+        settings: AppSettings,
+        apiKeys: APIKeyStoring
     ) {
         self.recordings = recordings
         self.transcripts = transcripts
@@ -23,6 +25,7 @@ final class AppContainer {
         self.recorder = recorder
         self.transcriber = transcriber
         self.settings = settings
+        self.apiKeys = apiKeys
     }
 
     /// Documents/Malmungchi 아래에 Audio, Transcripts, recordings.json을 둔다.
@@ -43,7 +46,8 @@ final class AppContainer {
             storage: try FileAudioStorage(directory: root.appendingPathComponent("Audio", isDirectory: true)),
             recorder: AVAudioRecorderService(),
             transcriber: WhisperKitTranscriber(modelProvider: { settings.transcriptionModel }),
-            settings: settings
+            settings: settings,
+            apiKeys: KeychainAPIKeyStore()
         )
     }
 
@@ -69,7 +73,7 @@ final class AppContainer {
 
     @MainActor
     func makeSettingsViewModel() -> SettingsViewModel {
-        SettingsViewModel(settings: settings)
+        SettingsViewModel(settings: settings, apiKeys: apiKeys)
     }
 
     @MainActor

@@ -211,3 +211,27 @@ final class InMemoryDigestRepository: DigestRepository {
         saveCount += 1
     }
 }
+
+final class InMemoryAPIKeyStore: APIKeyStoring {
+    private(set) var key: String?
+    var failure: Error?
+
+    init(key: String? = nil) {
+        self.key = key
+    }
+
+    func load() throws -> String? {
+        if let failure { throw failure }
+        return key
+    }
+
+    func save(_ key: String) throws {
+        if let failure { throw failure }
+        self.key = key
+    }
+
+    func delete() throws {
+        if let failure { throw failure }
+        key = nil
+    }
+}
